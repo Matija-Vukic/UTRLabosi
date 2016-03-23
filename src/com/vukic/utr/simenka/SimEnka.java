@@ -1,15 +1,15 @@
 package com.vukic.utr.simenka;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SimEnka {
+    private static boolean DEBUG = true;
     private List<List<String>> ulazniNizovi;
     private List<String> stanja;
     private List<String> abeceda;
@@ -20,23 +20,25 @@ public class SimEnka {
     private List<String> temp;
 
     public static void main(String[] args) {
-        // String fileInputName = args[0];
-        // String fileInputName = "zadatak/definicija.txt";
-//		String broj = "03";
-//		String fileInputName = "tests_from_ferweb/test" + broj + "/test.a";
-        SimEnka se = new SimEnka();
+        String broj = "03";
+        String fileInputName = "src/testsSimEnka/test"+broj+"/test.a";
+        SimEnka se;
+        if(!DEBUG) se = new SimEnka("");
+        else se = new SimEnka(fileInputName);
         se.start();
-        // DEBUG
-//		try {
-//			String line;
-//			BufferedReader brr = new BufferedReader(new FileReader(new File("tests/test" + broj + "/test.b")));
-//			System.out.println("Izlaz iz datoteke: ");
-//			while ((line = brr.readLine()) != null) {
-//				System.out.println(line);
-//			}
-//		} catch (IOException e) {
-//		}
-        // DEBUG
+        if(DEBUG) {
+            int i=0;
+            try {
+                String line;
+                BufferedReader brr = new BufferedReader(new FileReader(new File("src/testsSimEnka/test" + broj + "/test.b")));
+                while ((line = brr.readLine()) != null) {
+                    System.out.println(line);
+                    i++;
+                }
+            } catch (IOException e) {
+                System.out.println("Error");
+            }
+        }
 
     }
 
@@ -64,11 +66,13 @@ public class SimEnka {
         }
     }
 
-    public SimEnka() {
+    public SimEnka(String fileInput) {
         this.temp = new ArrayList<>();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        String s;
         try {
+            BufferedReader reader;
+            if(!SimEnka.DEBUG) reader = new BufferedReader(new InputStreamReader(System.in));
+            else reader = new BufferedReader(new FileReader(new File(fileInput)));
+            String s;
 //			System.out.println("Upisi liniju datoteke:");
             s = reader.readLine();
             while (s != null) {
@@ -77,7 +81,6 @@ public class SimEnka {
                 s = reader.readLine();
             }
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         getUlazneNizove(temp.get(0));
@@ -217,12 +220,8 @@ public class SimEnka {
         }
         // System.out.println("\n\nZavrsna stanja:");
         kraj.remove(kraj.size() - 1);
-//		kraj.stream().forEach(s -> System.out.print(s));// Prints result to
-//														// standard output
-        //JAVA 7 conversion
-        for(String s:kraj){
-            System.out.print(s);
-        }
+		kraj.stream().forEach(s -> System.out.print(s));
+
         System.out.println();// Print empty space at the end of result
         // System.out.println();
         // System.out.println("\n\n\n");
@@ -230,11 +229,8 @@ public class SimEnka {
 
     private String sortAddCommasRemoveHash() {
         // sorted to Set because there could be more then one #
-//		List<String> sorted = this.trenStanja.stream().sorted().collect(Collectors.toList());// Sort
-        //JAVA 7 conversion
-        List<String> sorted = new ArrayList<>();
-        sorted.addAll(this.trenStanja);
-        Collections.sort(sorted);
+		List<String> sorted = this.trenStanja.stream().sorted().collect(Collectors.toList());// Sort
+
         this.trenStanja.clear();
         if (sorted.contains("#")) {
             if (sorted.size() > 1) {
@@ -244,15 +240,7 @@ public class SimEnka {
         this.trenStanja.addAll(sorted);
         String joined = "";
         List<String> joinedList = new ArrayList<>(this.trenStanja);
-        //JAVA 7 conversion
-        StringBuilder sb = new StringBuilder();
-        for(int i=0;i<joinedList.size();i++){
-            sb.append(joinedList.get(i));
-            if(i <joinedList.size()-1){
-                sb.append(",");
-            }
-        }
-        joined = sb.toString();
+        joined = String.join(",",joinedList);
         return joined;
     }
 }

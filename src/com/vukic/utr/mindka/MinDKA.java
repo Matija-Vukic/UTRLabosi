@@ -7,9 +7,10 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class MinDKA {
-    public static boolean DEBUG = true;
+    public static boolean DEBUG = true; //čita iz testne datoteke
     private List<String> ulaznaStanja;
     private List<String> dohvatljivaStanja;
     private List<String> abeceda;
@@ -77,11 +78,7 @@ public class MinDKA {
             }
         }
         this.prihStanja.clear();
-//		this.prihStanja.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
-        List<String> sorted = new ArrayList<>();
-        sorted.addAll(tempStanja);
-        Collections.sort(sorted);
-        this.prihStanja.addAll(sorted);
+		this.prihStanja.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
     }
 
     private void eliminirajStanjaIzDohvatljivih() {
@@ -90,12 +87,7 @@ public class MinDKA {
             tempStanja.add(grupa.get(0));
         }
         this.dohvatljivaStanja.clear();
-//		this.dohvatljivaStanja.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
-        List<String> sorted = new ArrayList<>();
-        sorted.addAll(tempStanja);
-        Collections.sort(sorted);
-        this.dohvatljivaStanja.addAll(sorted);
-
+		this.dohvatljivaStanja.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
     }
 
     private void ispisRezultata() {
@@ -154,7 +146,7 @@ public class MinDKA {
             }
 //			System.out.println("Novi prijelaz: "+noviPrijelaz);
             noviPrijelazi.add(noviPrijelaz);
-//			noviPrijelazi.stream().forEach(p -> System.out.println("   "+p));
+//			noviPrijelazi.forEach(System.out::println);
         }
     }
 
