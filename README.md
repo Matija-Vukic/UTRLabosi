@@ -8,6 +8,11 @@ UTR labosi FER2 2014./2015
 
 3. Simulator Determinističkog Potisnog Automata
 
-4. Parser Rekurzivnim spustom
+4. Simulator Turingovog stroja
 
-5. Simulator Turingovog stroja
+### Translations and optimizations:
+
+- [x] 1
+- [ ] 2
+- [ ] 3
+- [ ] 4
