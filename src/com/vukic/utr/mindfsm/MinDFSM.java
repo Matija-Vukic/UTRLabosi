@@ -1,4 +1,4 @@
-package com.vukic.utr.mindka;
+package com.vukic.utr.mindfsm;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -9,41 +9,42 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class MinDKA {
-    public static boolean DEBUG = true; //čita iz testne datoteke
-    private List<String> ulaznaStanja;
-    private List<String> dohvatljivaStanja;
-    private List<String> abeceda;
-    private List<String> prihStanja;
-    private String pocStanje;
-    private List<Prijelaz> prijelazi;
+/***
+ * @author Matija Vukić 2015
+ */
+public class MinDFSM {
+    public static boolean DEBUG = true;
+    private List<String> states;
+    private List<String> reachableStates;
+    private List<String> alphabet;
+    private List<String> finalStates;
+    private String initialState;
+    private List<Transition> transitions;
     private List<List<String>> listeIstovjetnihStanja;
-    private Set<Prijelaz> noviPrijelazi;
-    public static List<String> listaZaUsporedbu;
+    private Set<Transition> newTransitions;
+    public static List<String> finalOutput;
 
     public static void main(String[] args) {
-        String broj = "02";
-        String fileInputName = "src/testsMinDKA/test"+broj+"/t.ul";
-        MinDKA se;
-        if(!DEBUG) se = new MinDKA("");
-		else se = new MinDKA(fileInputName);
-        se.start();
+        String testFileNumber = "02";
+        String testInputFile = "src/testsMinDFSM/test"+testFileNumber+"/t.ul";
+        MinDFSM mindfsm = MinDFSM.DEBUG ? new MinDFSM(testInputFile) : new MinDFSM("");
+        mindfsm.start();
 		 if(DEBUG) {
-             boolean kriviRezultat=false;
+             boolean matchError=false;
              int i=0;
              try {
                  String line;
-                 BufferedReader brr = new BufferedReader(new FileReader(new File("src/testsMinDKA/test" + broj + "/t.iz")));
-                 System.out.println("IZLAZ\t\t\tDATOTEKA ");
+                 BufferedReader brr = new BufferedReader(new FileReader(new File("src/testsMinDFSM/test" + testFileNumber + "/t.iz")));
+                 System.out.println("OUTPUT\t\t\tCORRECT OUTPUT ");
                  while ((line = brr.readLine()) != null) {
-                     if(!(MinDKA.listaZaUsporedbu.get(i).equals(line))) kriviRezultat=true;
-                     System.out.println(MinDKA.listaZaUsporedbu.get(i)+"  <==>  "+line);
+                     if(!(MinDFSM.finalOutput.get(i).equals(line))) matchError=true;
+                     System.out.println(MinDFSM.finalOutput.get(i)+"\t<==>\t"+line);
                      i++;
                  }
              } catch (IOException e) {
                  System.out.println("Error");
              }
-             System.out.println(kriviRezultat ? "Greska u rezultatu." : "Rezultat je točan.");
+             System.out.println(matchError ? "Error in result." : "Correct result..");
          }
     }
 
@@ -60,8 +61,8 @@ public class MinDKA {
 
     private void srediPocetnoStanje() {
         for(List<String> grupa: this.listeIstovjetnihStanja){
-            if(grupa.contains(this.pocStanje)){
-                this.pocStanje = grupa.get(0);
+            if(grupa.contains(this.initialState)){
+                this.initialState = grupa.get(0);
                 break;
             }
         }
@@ -69,7 +70,7 @@ public class MinDKA {
 
     private void eliminirajStanjaIzPrihvatljivih() {
         Set<String> tempStanja = new LinkedHashSet<>();
-        for(String stanje:this.prihStanja){
+        for(String stanje:this.finalStates){
             for(List<String> grupa:this.listeIstovjetnihStanja){
                 if(grupa.contains(stanje)){
                     tempStanja.add(grupa.get(0));
@@ -77,8 +78,8 @@ public class MinDKA {
                 }
             }
         }
-        this.prihStanja.clear();
-		this.prihStanja.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
+        this.finalStates.clear();
+		this.finalStates.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
     }
 
     private void eliminirajStanjaIzDohvatljivih() {
@@ -86,19 +87,19 @@ public class MinDKA {
         for(List<String> grupa:this.listeIstovjetnihStanja){
             tempStanja.add(grupa.get(0));
         }
-        this.dohvatljivaStanja.clear();
-		this.dohvatljivaStanja.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
+        this.reachableStates.clear();
+		this.reachableStates.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
     }
 
     private void ispisRezultata() {
-        MinDKA.listaZaUsporedbu = new ArrayList<>();
-        MinDKA.listaZaUsporedbu.add(spojiListuSaZarezima(this.dohvatljivaStanja));
-        MinDKA.listaZaUsporedbu.add(spojiListuSaZarezima(this.abeceda));
-        MinDKA.listaZaUsporedbu.add(spojiListuSaZarezima(this.prihStanja));
-        MinDKA.listaZaUsporedbu.add(this.pocStanje);
-        System.out.println(this.pocStanje);
-        for(Prijelaz p:this.noviPrijelazi){
-            MinDKA.listaZaUsporedbu.add(p.toString());
+        MinDFSM.finalOutput = new ArrayList<>();
+        MinDFSM.finalOutput.add(spojiListuSaZarezima(this.reachableStates));
+        MinDFSM.finalOutput.add(spojiListuSaZarezima(this.alphabet));
+        MinDFSM.finalOutput.add(spojiListuSaZarezima(this.finalStates));
+        MinDFSM.finalOutput.add(this.initialState);
+        System.out.println(this.initialState);
+        for(Transition p:this.newTransitions){
+            MinDFSM.finalOutput.add(p.toString());
             System.out.println(p);
         }
     }
@@ -106,6 +107,7 @@ public class MinDKA {
         String joined = "";
         if(lista.size() == 1){
             System.out.println(lista.get(0));
+            MinDFSM.finalOutput.add(lista.get(0));
             return lista.get(0);
         }else{
             List<String> joinedList = new ArrayList<>(lista);
@@ -123,40 +125,35 @@ public class MinDKA {
     }
 
     private void makniPrijelazeSaIstimStanjima() {
-        this.noviPrijelazi = new LinkedHashSet<>();
-        for(Prijelaz prijelaz:this.prijelazi){
+        this.newTransitions = new LinkedHashSet<>();
+        for(Transition prijelaz:this.transitions){
 //			System.out.println("Prijelaz: "+prijelaz);
-            Prijelaz noviPrijelaz = new Prijelaz(prijelaz.stanje,prijelaz.znak,prijelaz.sljedStanje);
+            Transition noviPrijelaz = new Transition(prijelaz.state,prijelaz.symbol,prijelaz.nextState);
             for(List<String> grupa:this.listeIstovjetnihStanja){
-                if(grupa.contains(prijelaz.stanje)){
+                if(grupa.contains(prijelaz.state)){
 //					System.out.println("Stanje "+prijelaz.stanje+" je u grupi: "+grupa);
 //					System.out.println("Mjenjam stanje "+prijelaz.stanje+" sa "+grupa.get(0));
-                    noviPrijelaz.stanje = grupa.get(0);
+                    noviPrijelaz.state = grupa.get(0);
                     break;
                 }
             }
-//			System.out.println("Novi prijelaz: "+noviPrijelaz);
             for(List<String> grupa:this.listeIstovjetnihStanja){
-                if(grupa.contains(prijelaz.sljedStanje)){
-//					System.out.println("Stanje "+prijelaz.sljedStanje+" je u grupi: "+grupa);
-//					System.out.println("Mjenjam stanje "+prijelaz.sljedStanje+" sa "+grupa.get(0));
-                    noviPrijelaz.sljedStanje = grupa.get(0);
+                if(grupa.contains(prijelaz.nextState)){
+                    noviPrijelaz.nextState = grupa.get(0);
                     break;
                 }
             }
-//			System.out.println("Novi prijelaz: "+noviPrijelaz);
-            noviPrijelazi.add(noviPrijelaz);
-//			noviPrijelazi.forEach(System.out::println);
+            newTransitions.add(noviPrijelaz);
         }
     }
 
     private void minimizirajDka() {
-        List<String> prihStanja = new ArrayList<>(this.prihStanja);
+        List<String> prihStanja = new ArrayList<>(this.finalStates);
         List<String> neprihStanja = new ArrayList<>();
         List<List<String>> grupe = new ArrayList<>();
         // razdvoji prihvtljiva i neprihvatljiva stanja u liste
-        for (String stanje : dohvatljivaStanja) {
-            if (!(this.prihStanja.contains(stanje))) {
+        for (String stanje : reachableStates) {
+            if (!(this.finalStates.contains(stanje))) {
                 neprihStanja.add(stanje);
             }
         }
@@ -235,16 +232,16 @@ public class MinDKA {
      */
     private boolean ChechIfTheyTransitionToSameGroup(String stanje1, String stanje2, List<List<String>> grupe) {
         int counter = 0;
-        for (String znak : this.abeceda) {
-            Prijelaz prijelaz1 = getPrijelazZaZnakIStanje(stanje1, znak);
-            Prijelaz prijelaz2 = getPrijelazZaZnakIStanje(stanje2, znak);
+        for (String znak : this.alphabet) {
+            Transition prijelaz1 = getPrijelazZaZnakIStanje(stanje1, znak);
+            Transition prijelaz2 = getPrijelazZaZnakIStanje(stanje2, znak);
             for (List<String> grupa : grupe) {
-                if (grupa.contains(prijelaz1.sljedStanje) && grupa.contains(prijelaz2.sljedStanje)) {
+                if (grupa.contains(prijelaz1.nextState) && grupa.contains(prijelaz2.nextState)) {
                     counter++;
                 }
             }
         }
-        if (counter == this.abeceda.size()) {
+        if (counter == this.alphabet.size()) {
             return true;
         } else {
             return false;
@@ -253,10 +250,10 @@ public class MinDKA {
 
     // Returns transition for given state and sign
 
-    private Prijelaz getPrijelazZaZnakIStanje(String stanje, String znak) {
-        Prijelaz temp = null;
-        for (Prijelaz prijelaz : this.prijelazi) {
-            if (prijelaz.stanje.equals(stanje) && prijelaz.znak.equals(znak)) {
+    private Transition getPrijelazZaZnakIStanje(String stanje, String znak) {
+        Transition temp = null;
+        for (Transition prijelaz : this.transitions) {
+            if (prijelaz.state.equals(stanje) && prijelaz.symbol.equals(znak)) {
                 temp = prijelaz;
                 break;
             }
@@ -270,23 +267,23 @@ public class MinDKA {
      */
     private void makniNepotrebnePrijelaze() {
         //makni nedohvatljiva stanja iz prijelaza
-        List<Prijelaz> tempPrijelazi = new ArrayList<>();
-        for (Prijelaz prijelaz : this.prijelazi) {
-            if (this.dohvatljivaStanja.contains(prijelaz.stanje)) {
+        List<Transition> tempPrijelazi = new ArrayList<>();
+        for (Transition prijelaz : this.transitions) {
+            if (this.reachableStates.contains(prijelaz.state)) {
                 tempPrijelazi.add(prijelaz);
             }
         }
-        this.prijelazi.clear();
-        this.prijelazi.addAll(tempPrijelazi);
+        this.transitions.clear();
+        this.transitions.addAll(tempPrijelazi);
         //makni nedohvatljiv stanja iz prihvatljivih stanja
         List<String> tempPrihStanja = new ArrayList<>();
-        for (String stanje : this.prihStanja) {
-            if (this.dohvatljivaStanja.contains(stanje)) {
+        for (String stanje : this.finalStates) {
+            if (this.reachableStates.contains(stanje)) {
                 tempPrihStanja.add(stanje);
             }
         }
-        this.prihStanja.clear();
-        this.prihStanja.addAll(tempPrihStanja);
+        this.finalStates.clear();
+        this.finalStates.addAll(tempPrihStanja);
     }
 
     /**
@@ -295,8 +292,8 @@ public class MinDKA {
     private void makniNedohvatljivaStanja() {
         Set<String> dohvatljivaStanja = new LinkedHashSet<>();
         List<String> svaStanjaIzTrenutnog;
-        this.dohvatljivaStanja = new ArrayList<>();
-        dohvatljivaStanja.add(this.pocStanje);
+        this.reachableStates = new ArrayList<>();
+        dohvatljivaStanja.add(this.initialState);
 
         while (true) {
             // while we can found new reachable state
@@ -323,7 +320,7 @@ public class MinDKA {
         List<String> sorted = new ArrayList<>();
         sorted.addAll(dohvatljivaStanja);
         Collections.sort(sorted);
-        this.dohvatljivaStanja.addAll(sorted);
+        this.reachableStates.addAll(sorted);
 //		 System.out.println("Dohvatljiva stanja: "+this.dohvatljivaStanja);
     }
 
@@ -335,22 +332,20 @@ public class MinDKA {
      */
     private List<String> FindDohvatljivaStanja(String stanje) {
         Set<String> stanjaUKojaMozeOvoStanje = new LinkedHashSet<>();
-        for (Prijelaz prijelaz : this.prijelazi) {
-            if (prijelaz.stanje.equals(stanje)) {
-                stanjaUKojaMozeOvoStanje.add(prijelaz.sljedStanje);
+        for (Transition prijelaz : this.transitions) {
+            if (prijelaz.state.equals(stanje)) {
+                stanjaUKojaMozeOvoStanje.add(prijelaz.nextState);
             }
         }
         List<String> lst = new ArrayList<>(stanjaUKojaMozeOvoStanje);
         return lst;
     }
 
-    public MinDKA(String fileInputString) {
+    public MinDFSM(String fileInputString) {
         List<String> temp = new ArrayList<>(); // Lines from file
         String line;
         try {
-            BufferedReader br;
-            if(!MinDKA.DEBUG)  br = new BufferedReader(new InputStreamReader(System.in));
-            else               br = new BufferedReader(new FileReader(new File(fileInputString)));
+            BufferedReader br = MinDFSM.DEBUG ? new BufferedReader(new FileReader(new File(fileInputString))):new BufferedReader(new InputStreamReader(System.in));
             while ((line = br.readLine()) != null) {
                 temp.add(line);
             }
@@ -363,20 +358,20 @@ public class MinDKA {
         }
     }
 
-    public class Prijelaz{
-        public String stanje;
-        public String znak;
-        public String sljedStanje;
+    public class Transition{
+        public String state;
+        public String symbol;
+        public String nextState;
 
-        public Prijelaz(String a, String b, String c) {
-            stanje = a;
-            znak = b;
-            sljedStanje = c;
+        public Transition(String state, String symbol, String nextState) {
+            this.state = state;
+            this.symbol = symbol;
+            this.nextState = nextState;
         }
 
         @Override
         public String toString() {
-            return (stanje + "," + znak + "->" + sljedStanje);
+            return (state + "," + symbol + "->" + nextState);
         }
 
         @Override
@@ -384,8 +379,8 @@ public class MinDKA {
             final int prime = 31;
             int result = 1;
             result = prime * result + getOuterType().hashCode();
-            result = prime * result + ((stanje == null) ? 0 : stanje.hashCode());
-            result = prime * result + ((znak == null) ? 0 : znak.hashCode());
+            result = prime * result + ((state == null) ? 0 : state.hashCode());
+            result = prime * result + ((symbol == null) ? 0 : symbol.hashCode());
             return result;
         }
 
@@ -397,62 +392,62 @@ public class MinDKA {
                 return false;
             if (getClass() != obj.getClass())
                 return false;
-            Prijelaz other = (Prijelaz) obj;
+            Transition other = (Transition) obj;
             if (!getOuterType().equals(other.getOuterType()))
                 return false;
-            if (stanje == null) {
-                if (other.stanje != null)
+            if (state == null) {
+                if (other.state != null)
                     return false;
-            } else if (!stanje.equals(other.stanje))
+            } else if (!state.equals(other.state))
                 return false;
-            if (znak == null) {
-                if (other.znak != null)
+            if (symbol == null) {
+                if (other.symbol != null)
                     return false;
-            } else if (!znak.equals(other.znak))
+            } else if (!symbol.equals(other.symbol))
                 return false;
             return true;
         }
 
-        private MinDKA getOuterType() {
-            return MinDKA.this;
+        private MinDFSM getOuterType() {
+            return MinDFSM.this;
         }
 
     }
 
     private void getPrijelazi(List<String> prijelaziAsLines) {
-        this.prijelazi = new ArrayList<>();
+        this.transitions = new ArrayList<>();
         // System.out.println("Prijelazi: ");
         for (String line : prijelaziAsLines) {
             if (prijelaziAsLines.indexOf(line) >= 4) {
                 String left = (line.split("->"))[0];
                 String right = (line.split("->"))[1];
                 String[] leftSplit = left.split(",");
-                Prijelaz prijelaz = new Prijelaz(leftSplit[0], leftSplit[1], right);
-                this.prijelazi.add(prijelaz);
+                Transition prijelaz = new Transition(leftSplit[0], leftSplit[1], right);
+                this.transitions.add(prijelaz);
                 // System.out.println("     "+prijelaz.toString());
             }
         }
     }
 
     private void getPocetnoStanje(String stanje) {
-        this.pocStanje = stanje;
+        this.initialState = stanje;
     }
 
     private void getPrihvatljivaStanja(String prihStanjaAsString) {
-        this.prihStanja = new ArrayList<>();
-        this.prihStanja.addAll(Arrays.asList(prihStanjaAsString.split(",")));
+        this.finalStates = new ArrayList<>();
+        this.finalStates.addAll(Arrays.asList(prihStanjaAsString.split(",")));
         // System.out.println("Prihvatljiva: "+this.prihStanja);
     }
 
     private void getAbeceda(String abecedaSaString) {
-        this.abeceda = new ArrayList<>();
-        this.abeceda = Arrays.asList(abecedaSaString.split(","));
+        this.alphabet = new ArrayList<>();
+        this.alphabet = Arrays.asList(abecedaSaString.split(","));
         // System.out.println("Abeceda: "+this.abeceda);
     }
 
     private void getUlaznaStanja(String stanjaAsString) {
-        this.ulaznaStanja = new ArrayList<>();
-        this.ulaznaStanja = Arrays.asList(stanjaAsString.split(","));
+        this.states = new ArrayList<>();
+        this.states = Arrays.asList(stanjaAsString.split(","));
         // System.out.println("Ul. stanja: "+this.ulaznaStanja);
     }
 

@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/***
+ * @author Matija Vukić 2015
+ */
 public class SimENFSM {
     private static boolean DEBUG = true;
     private List<List<String>> inputArrays;
@@ -19,7 +22,7 @@ public class SimENFSM {
     private List<String> linesForProcessing;
 
     public static void main(String[] args) {
-        String testFileNumber = "03"; //See testsSimENFSM for details
+        String testFileNumber = "03"; //See testsSimENFSM folder for details
         String testInputFile = "src/testsSimENFSM/test"+testFileNumber+"/test.a";
         SimENFSM se = SimENFSM.DEBUG ? new SimENFSM(testInputFile) : new SimENFSM("");
         se.startSimulation();
@@ -34,7 +37,6 @@ public class SimENFSM {
                 System.out.println("Error while reading from test output file!");
             }
         }
-
     }
 
     /**

@@ -14,7 +14,7 @@ import java.util.Stack;
 /**
  * Deterministicki potisni utomat koji prihvaca niz
  * prizvatljivim stanjem.
- * @author Matija
+ * @author Matija Vukić
  *
  */
 public class SimPa {
