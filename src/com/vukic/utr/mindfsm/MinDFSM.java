@@ -3,14 +3,13 @@ package com.vukic.utr.mindfsm;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /***
- * @author Matija Vukić 2015
+ * @author Matija Vukić 2016
  */
 public class MinDFSM {
     public static boolean DEBUG = true;
@@ -20,12 +19,12 @@ public class MinDFSM {
     private List<String> finalStates;
     private String initialState;
     private List<Transition> transitions;
-    private List<List<String>> listeIstovjetnihStanja;
+    private List<List<String>> listOfEquivalentStates;
     private Set<Transition> newTransitions;
     public static List<String> finalOutput;
 
     public static void main(String[] args) {
-        String testFileNumber = "02";
+        String testFileNumber = "06";
         String testInputFile = "src/testsMinDFSM/test"+testFileNumber+"/t.ul";
         MinDFSM mindfsm = MinDFSM.DEBUG ? new MinDFSM(testInputFile) : new MinDFSM("");
         mindfsm.start();
@@ -49,18 +48,18 @@ public class MinDFSM {
     }
 
     public void start() {
-        makniNedohvatljivaStanja();
-        makniNepotrebnePrijelaze();
-        minimizirajDka();
-        makniPrijelazeSaIstimStanjima();
-        eliminirajStanjaIzDohvatljivih();
-        eliminirajStanjaIzPrihvatljivih();
+        RemoveUnreachableStates();
+        RemoveRedundantTransitionsAndUnreachableStates();
+        MinimizeDFSM();
+        RemoveEquivalentTransitions();
+        RemoveEquivalentStatesFromReachable();
+        RemoveEquivalentStatesFromAcceptable();
         srediPocetnoStanje();
         ispisRezultata();
     }
 
     private void srediPocetnoStanje() {
-        for(List<String> grupa: this.listeIstovjetnihStanja){
+        for(List<String> grupa: this.listOfEquivalentStates){
             if(grupa.contains(this.initialState)){
                 this.initialState = grupa.get(0);
                 break;
@@ -68,10 +67,10 @@ public class MinDFSM {
         }
     }
 
-    private void eliminirajStanjaIzPrihvatljivih() {
+    private void RemoveEquivalentStatesFromAcceptable() {
         Set<String> tempStanja = new LinkedHashSet<>();
         for(String stanje:this.finalStates){
-            for(List<String> grupa:this.listeIstovjetnihStanja){
+            for(List<String> grupa:this.listOfEquivalentStates){
                 if(grupa.contains(stanje)){
                     tempStanja.add(grupa.get(0));
                     break;
@@ -82,13 +81,15 @@ public class MinDFSM {
 		this.finalStates.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
     }
 
-    private void eliminirajStanjaIzDohvatljivih() {
-        Set<String> tempStanja = new LinkedHashSet<>();
-        for(List<String> grupa:this.listeIstovjetnihStanja){
-            tempStanja.add(grupa.get(0));
-        }
-        this.reachableStates.clear();
-		this.reachableStates.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
+    /***
+     * From every group of equivalent states removes all states but the first
+     * because first state represents all the other sates.
+     */
+    private void RemoveEquivalentStatesFromReachable() {
+        this.reachableStates = this.listOfEquivalentStates.stream()
+                .map(g -> g.get(0)) // Get first state from group of states
+                .sorted()   //sort states alphabetically
+                .collect(Collectors.toList());
     }
 
     private void ispisRezultata() {
@@ -107,7 +108,6 @@ public class MinDFSM {
         String joined = "";
         if(lista.size() == 1){
             System.out.println(lista.get(0));
-            MinDFSM.finalOutput.add(lista.get(0));
             return lista.get(0);
         }else{
             List<String> joinedList = new ArrayList<>(lista);
@@ -124,122 +124,104 @@ public class MinDFSM {
         return joined;
     }
 
-    private void makniPrijelazeSaIstimStanjima() {
+    /***
+     * Removes transitions that have the same state and next state.
+     * Leaves only transition that for those states has states that are first in groups
+     * in which those states were found.
+     */
+    private void RemoveEquivalentTransitions() {
         this.newTransitions = new LinkedHashSet<>();
-        for(Transition prijelaz:this.transitions){
-//			System.out.println("Prijelaz: "+prijelaz);
-            Transition noviPrijelaz = new Transition(prijelaz.state,prijelaz.symbol,prijelaz.nextState);
-            for(List<String> grupa:this.listeIstovjetnihStanja){
-                if(grupa.contains(prijelaz.state)){
-//					System.out.println("Stanje "+prijelaz.stanje+" je u grupi: "+grupa);
-//					System.out.println("Mjenjam stanje "+prijelaz.stanje+" sa "+grupa.get(0));
-                    noviPrijelaz.state = grupa.get(0);
-                    break;
-                }
-            }
-            for(List<String> grupa:this.listeIstovjetnihStanja){
-                if(grupa.contains(prijelaz.nextState)){
-                    noviPrijelaz.nextState = grupa.get(0);
-                    break;
-                }
-            }
-            newTransitions.add(noviPrijelaz);
+        for(Transition trans:this.transitions){
+            Transition newTransition = new Transition(trans.state,trans.symbol,trans.nextState);
+            newTransition.state = this.listOfEquivalentStates.stream()
+                    .filter(g->g.contains(trans.state)) // Find group that contains state
+                    .map(g->g.get(0)) // Get first state in that group
+                    .findFirst()
+                    .get();
+            newTransition.nextState = this.listOfEquivalentStates.stream()
+                    .filter(g->g.contains(trans.nextState)) // Find group that contains state
+                    .map(g->g.get(0)) // Get first state in that group
+                    .findFirst()
+                    .get();
+            newTransitions.add(newTransition);
         }
     }
 
-    private void minimizirajDka() {
-        List<String> prihStanja = new ArrayList<>(this.finalStates);
-        List<String> neprihStanja = new ArrayList<>();
-        List<List<String>> grupe = new ArrayList<>();
-        // razdvoji prihvtljiva i neprihvatljiva stanja u liste
-        for (String stanje : reachableStates) {
-            if (!(this.finalStates.contains(stanje))) {
-                neprihStanja.add(stanje);
-            }
-        }
-        //provjeri ako je neka od listi prazna
-        if(prihStanja.isEmpty() | neprihStanja.isEmpty()){
-            if(!(prihStanja.isEmpty())){
-                grupe.add(prihStanja);
-            }
-            if(!(neprihStanja.isEmpty())){
-                grupe.add(neprihStanja);
-            }
+    /***
+     * Uses Hopcroft's algorithm for minimization.
+     * Link: https://en.wikipedia.org/wiki/DFA_minimization#Hopcroft.27s_algorithm
+     */
+    private void MinimizeDFSM() {
+        List<String> acceptableStates = new ArrayList<>(this.finalStates);
+        List<String> unAccpetableStates;
+        // List groups will contain lists of states that are equivalent.
+        List<List<String>> groups = new ArrayList<>();
+        unAccpetableStates = this.reachableStates.stream()
+                .filter(s -> !this.finalStates.contains(s))
+                .collect(Collectors.toList());
+        if(acceptableStates.isEmpty() | unAccpetableStates.isEmpty()){
+            // If we have some acceptable sates add them all to group
+            if(!(acceptableStates.isEmpty())) groups.add(acceptableStates);
+            // If we have unacceptable states add them all to group
+            if(!(unAccpetableStates.isEmpty())) groups.add(unAccpetableStates);
         }else{
-            grupe.add(prihStanja);
-            grupe.add(neprihStanja);
+            // Creates two groups of states and adds them to groups
+            groups.add(acceptableStates);
+            groups.add(unAccpetableStates);
         }
-        List<List<String>> noveGrupe = new ArrayList<>(grupe);
-//		System.out.println("Prihvatljiva stanja: " + prihStanja);
-//		System.out.println("Neprihvatljiva stajna: " + neprihStanja);
+        List<List<String>> newGroups = new ArrayList<>(groups);
         while (true) {
-            grupe.clear(); // ocisti buffer za nove grupe
-            grupe.addAll(noveGrupe);// ponovi sve za nove grupe
-            noveGrupe.clear();
-            for (List<String> grupa : grupe) { // za svaku trenutnu grupu
-                List<String> novaGrupa = new ArrayList<>();
-                String stanje1 = grupa.get(0); // uzmi prvo stanje u grupi
-                for (String stanje2 : grupa) { // usporeduj ga sa svakim drugim
-                    // stanjem u grupi
-                    if (!(stanje1.equals(stanje2))) { // ako su stanja razlicita
-                        //provjeri ako stanja idu u stanja koja su u istim grupama
-                        boolean check = ChechIfTheyTransitionToSameGroup(stanje1, stanje2, grupe);
-                        if (!check) { // ako ne prelaze
-                            // nova grupa koja sadrzi stanja koja se ne slazu s pocetnim
-                            novaGrupa.add(stanje2);
-                        }
-                    }
-                }
-                if (novaGrupa.size() > 0) {
-//					System.out.println("Nova grupa: " + novaGrupa);
-                    List<String> temp = new ArrayList<>(removeStatesFromListInAnotherList(grupa, novaGrupa));
-//					System.out.println("Stara grupa: " + grupa);
-                    noveGrupe.add(new ArrayList<>(temp));
-                    noveGrupe.add(new ArrayList<>(novaGrupa));
-//					System.out.println("Nova lista grupa: " + noveGrupe);
-//					System.out.println("Stare grupe: " + grupe);
+            groups.clear(); //Clear old groups.
+            groups.addAll(newGroups); // Add new groups.
+            newGroups.clear();
+            for (List<String> group : groups) { // For every group of states.
+                List<String> newGroup = new ArrayList<>();
+                String s1 = group.get(0); // Take first state in group
+                // Add all states from group to new group that don't transition to the same group as first state
+                newGroup.addAll(group.stream()
+                        .filter(s -> !((s1.equals(s)) | CheckTransition(s1,s,groups)))
+                        .collect(Collectors.toList()));
+                // If there were states that have different transition group
+                if (newGroup.size() > 0) {
+                    newGroups.add(findDifferences(group, newGroup));
+                    newGroups.add(newGroup);
                 } else {
-//					System.out.println("Nije bilo promjene unutar grupe!");
-//					System.out.println("Nova lista grupa: " + noveGrupe);
-//					System.out.println("Stare grupe: " + grupe);
-                    noveGrupe.add(grupa);
+                    newGroups.add(group);
                 }
 
-            }// after this repeat check if there were made any new groups
-            if (grupe.size() == noveGrupe.size()) {
-                //if not then break
-                break;
             }
-        }
-//		System.out.println("\nPronadena istovjetna stanja:");
-        this.listeIstovjetnihStanja = new ArrayList<>(grupe);
-//		System.out.println("Grupe: "+this.listeIstovjetnihStanja);
-    }
+            // If there were any new groups repeat process for them, else break
+            if (groups.size() == newGroups.size()) break;
 
-    private List<String> removeStatesFromListInAnotherList(List<String> grupa, List<String> novaGrupa) {
-        List<String> temp = new ArrayList<>();
-        for (String stanje : grupa) {
-            if (!(novaGrupa.contains(stanje))) {
-                temp.add(stanje);
-            }
         }
-        return temp;
+        this.listOfEquivalentStates = groups;
     }
 
     /**
-     * checks if transitions for given states and symbols lead to states that
-     * are in same groups
+     * Returns list of states that are in list group but not in list newGroup.
+     * @param group
+     * @param newGroup
+     * @return
      */
-    private boolean ChechIfTheyTransitionToSameGroup(String stanje1, String stanje2, List<List<String>> grupe) {
+    private List<String> findDifferences(List<String> group, List<String> newGroup) {
+        return group.stream()
+                .filter(s -> !newGroup.contains(s))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Checks if transitions for given states and symbols lead to states that
+     * are in same groups.
+     */
+    private boolean CheckTransition(String state1, String state2, List<List<String>> groups) {
         int counter = 0;
-        for (String znak : this.alphabet) {
-            Transition prijelaz1 = getPrijelazZaZnakIStanje(stanje1, znak);
-            Transition prijelaz2 = getPrijelazZaZnakIStanje(stanje2, znak);
-            for (List<String> grupa : grupe) {
-                if (grupa.contains(prijelaz1.nextState) && grupa.contains(prijelaz2.nextState)) {
-                    counter++;
-                }
-            }
+        for (String symbol : this.alphabet) {
+            Transition t1 = GetTransition(state1, symbol);
+            Transition t2 = GetTransition(state2, symbol);
+            counter += groups.stream()
+                    .filter(g -> g.contains(t1.nextState) && g.contains(t2.nextState))
+                    .collect(Collectors.toList())
+                    .size();
         }
         if (counter == this.alphabet.size()) {
             return true;
@@ -248,80 +230,70 @@ public class MinDFSM {
         }
     }
 
-    // Returns transition for given state and sign
-
-    private Transition getPrijelazZaZnakIStanje(String stanje, String znak) {
-        Transition temp = null;
-        for (Transition prijelaz : this.transitions) {
-            if (prijelaz.state.equals(stanje) && prijelaz.symbol.equals(znak)) {
-                temp = prijelaz;
-                break;
-            }
-        }
-        return temp;
+    /***
+     *  Returns transition for specific state and symbol.
+     * @param state
+     * @param symbol
+     * @return
+     */
+    private Transition GetTransition(String state, String symbol) {
+        return this.transitions.stream()
+                .filter(t -> t.state.equals(state) && t.symbol.equals(symbol))
+                .findAny()
+                .orElse(null);
     }
 
     /**
-     * Removes unwanted transitions and removes unreachable states from final
-     * states
+     * Removes redundant transitions and removes unreachable states from final
+     * states. Redundant transitions are the ones that have unreachable state
+     * as current state.
      */
-    private void makniNepotrebnePrijelaze() {
-        //makni nedohvatljiva stanja iz prijelaza
-        List<Transition> tempPrijelazi = new ArrayList<>();
-        for (Transition prijelaz : this.transitions) {
-            if (this.reachableStates.contains(prijelaz.state)) {
-                tempPrijelazi.add(prijelaz);
-            }
-        }
+    private void RemoveRedundantTransitionsAndUnreachableStates() {
+        // Remove redundant transitions
+        List<Transition> temp1 = this.transitions.stream()
+                .filter(t -> this.reachableStates.contains(t.state))
+                .collect(Collectors.toList());
         this.transitions.clear();
-        this.transitions.addAll(tempPrijelazi);
-        //makni nedohvatljiv stanja iz prihvatljivih stanja
-        List<String> tempPrihStanja = new ArrayList<>();
-        for (String stanje : this.finalStates) {
-            if (this.reachableStates.contains(stanje)) {
-                tempPrihStanja.add(stanje);
-            }
-        }
+        this.transitions.addAll(temp1);
+        // Remove unreachable sates
+        List<String> temp2 = this.finalStates.stream()
+                .filter(s -> this.reachableStates.contains(s))
+                .collect(Collectors.toList());
         this.finalStates.clear();
-        this.finalStates.addAll(tempPrihStanja);
+        this.finalStates.addAll(temp2);
     }
 
     /**
-     * Removes unreachable states
+     * Removes unreachable states. For every initial state goes trough transitions and finds
+     * all transitions that have that state as starting state. New reachable states are saved
+     * to list and compared to starting list of states.If there was no change that means we
+     * found all reachable states.
      */
-    private void makniNedohvatljivaStanja() {
-        Set<String> dohvatljivaStanja = new LinkedHashSet<>();
-        List<String> svaStanjaIzTrenutnog;
+    private void RemoveUnreachableStates() {
+        Set<String> reachableStates = new LinkedHashSet<>();
+        List<String> reachableStatesFromCurrentState;
         this.reachableStates = new ArrayList<>();
-        dohvatljivaStanja.add(this.initialState);
+        reachableStates.add(this.initialState);
 
         while (true) {
             // while we can found new reachable state
-            Set<String> novaDohvatljivaStanja = new LinkedHashSet<>();
+            Set<String> newReachableStates = new LinkedHashSet<>();
             // for every currently reachable state
-            for (String stanje : dohvatljivaStanja) {
-                // find all reachable states for current state
-                svaStanjaIzTrenutnog = FindDohvatljivaStanja(stanje);
-//				 System.out.println("Dohvatljiva stanje iz "+stanje+" su: "+svaStanjaIzTrenutnog);
-                // add new states to set
-                novaDohvatljivaStanja.addAll(svaStanjaIzTrenutnog);
-//				 System.out.println("Nova Dohvatljiva stanja: "+novaDohvatljivaStanja);
+            for (String stanje : reachableStates) {
+                // find all reachable states
+                reachableStatesFromCurrentState = FindDohvatljivaStanja(stanje);
+                // add new states to set (removes duplicates)
+                newReachableStates.addAll(reachableStatesFromCurrentState);
             }
-            // if no new reachable states were found break while loop
-            if (dohvatljivaStanja.containsAll(novaDohvatljivaStanja)) {
+            // if no new reachable states were found break loop
+            if (reachableStates.containsAll(newReachableStates)) {
                 break;
             }
             // else populate list with reachable states with new reachable
             // states
-            dohvatljivaStanja.addAll(novaDohvatljivaStanja);
-//			System.out.println("Nova dohvatljiva stanja za sva trenutno dohvatljiva stanja: "+dohvatljivaStanja+"\n");
+            reachableStates.addAll(newReachableStates);
         }
-        // save reachable states to class variable and sort them alphabetically
-        List<String> sorted = new ArrayList<>();
-        sorted.addAll(dohvatljivaStanja);
-        Collections.sort(sorted);
-        this.reachableStates.addAll(sorted);
-//		 System.out.println("Dohvatljiva stanja: "+this.dohvatljivaStanja);
+        this.reachableStates.addAll(reachableStates.stream().sorted().collect(Collectors.toList()));
     }
 
     /**
@@ -429,8 +401,8 @@ public class MinDFSM {
         }
     }
 
-    private void getPocetnoStanje(String stanje) {
-        this.initialState = stanje;
+    private void getPocetnoStanje(String state) {
+        this.initialState = state;
     }
 
     private void getPrihvatljivaStanja(String prihStanjaAsString) {
