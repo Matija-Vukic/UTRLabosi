@@ -1,10 +1,10 @@
 # UTR Labosi
 UTR labosi FER2 2014./2015
 
-###Programi:
-1. Simulator Nedeterminističkog Konačnog automata s E-prijelazima
+###Programs:
+1. Nondeterministic finite automaton with ε-moves
 
-2. Minimizator Determinističkog Konačnog automata
+2. DFA minimization
 
 3. Simulator Determinističkog Potisnog Automata
 
@@ -13,6 +13,6 @@ UTR labosi FER2 2014./2015
 ### Translations and optimizations:
 
 - [x] 1
-- [ ] 2
+- [x] 2
 - [ ] 3
 - [ ] 4

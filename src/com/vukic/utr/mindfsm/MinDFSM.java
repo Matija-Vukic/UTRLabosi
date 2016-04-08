@@ -37,7 +37,7 @@ public class MinDFSM {
                  System.out.println("OUTPUT\t\t\tCORRECT OUTPUT ");
                  while ((line = brr.readLine()) != null) {
                      if(!(MinDFSM.finalOutput.get(i).equals(line))) matchError=true;
-                     System.out.println(MinDFSM.finalOutput.get(i)+"\t<==>\t"+line);
+                     System.out.println(MinDFSM.finalOutput.get(i)+"\t\t<==>\t"+line);
                      i++;
                  }
              } catch (IOException e) {
@@ -54,31 +54,40 @@ public class MinDFSM {
         RemoveEquivalentTransitions();
         RemoveEquivalentStatesFromReachable();
         RemoveEquivalentStatesFromAcceptable();
-        srediPocetnoStanje();
-        ispisRezultata();
+        FixInitialState();
+        PrintResult();
     }
 
-    private void srediPocetnoStanje() {
-        for(List<String> grupa: this.listOfEquivalentStates){
-            if(grupa.contains(this.initialState)){
-                this.initialState = grupa.get(0);
-                break;
-            }
-        }
+    /***
+     * Swaps initial state with the one that represents him in his group
+     * of equivalent states.
+     */
+    private void FixInitialState() {
+        this.initialState = this.listOfEquivalentStates.stream()
+                .filter(g->g.contains(this.initialState))
+                .map(g->g.get(0))
+                .findFirst()
+                .get();
     }
 
+    /***
+     * Removes equivalent states from acceptable states and leaves only one
+     * state that represents that group of equivalent states.
+     */
     private void RemoveEquivalentStatesFromAcceptable() {
-        Set<String> tempStanja = new LinkedHashSet<>();
-        for(String stanje:this.finalStates){
-            for(List<String> grupa:this.listOfEquivalentStates){
-                if(grupa.contains(stanje)){
-                    tempStanja.add(grupa.get(0));
+        Set<String> temp = new LinkedHashSet<>();
+        for(String state:this.finalStates){
+            for(List<String> group:this.listOfEquivalentStates){
+                if(group.contains(state)){
+                    temp.add(group.get(0));
                     break;
                 }
             }
         }
         this.finalStates.clear();
-		this.finalStates.addAll(tempStanja.stream().sorted().collect(Collectors.toList()));
+		this.finalStates.addAll(temp.stream()
+                .sorted()
+                .collect(Collectors.toList()));
     }
 
     /***
@@ -92,36 +101,18 @@ public class MinDFSM {
                 .collect(Collectors.toList());
     }
 
-    private void ispisRezultata() {
+    private void PrintResult() {
         MinDFSM.finalOutput = new ArrayList<>();
-        MinDFSM.finalOutput.add(spojiListuSaZarezima(this.reachableStates));
-        MinDFSM.finalOutput.add(spojiListuSaZarezima(this.alphabet));
-        MinDFSM.finalOutput.add(spojiListuSaZarezima(this.finalStates));
+        MinDFSM.finalOutput.add(String.join(",",this.reachableStates));
+        MinDFSM.finalOutput.add(String.join(",",this.alphabet));
+        MinDFSM.finalOutput.add(String.join(",",this.finalStates));
         MinDFSM.finalOutput.add(this.initialState);
-        System.out.println(this.initialState);
         for(Transition p:this.newTransitions){
             MinDFSM.finalOutput.add(p.toString());
-            System.out.println(p);
         }
-    }
-    private String spojiListuSaZarezima(List<String> lista){
-        String joined = "";
-        if(lista.size() == 1){
-            System.out.println(lista.get(0));
-            return lista.get(0);
-        }else{
-            List<String> joinedList = new ArrayList<>(lista);
-            StringBuilder sb = new StringBuilder();
-            for(int i=0;i<joinedList.size();i++){
-                sb.append(joinedList.get(i));
-                if(i <joinedList.size()-1){
-                    sb.append(",");
-                }
-            }
-            joined = sb.toString();
-            System.out.println(joined);
+        if(!MinDFSM.DEBUG){
+            MinDFSM.finalOutput.stream().forEach(System.out::println);
         }
-        return joined;
     }
 
     /***
@@ -153,21 +144,21 @@ public class MinDFSM {
      */
     private void MinimizeDFSM() {
         List<String> acceptableStates = new ArrayList<>(this.finalStates);
-        List<String> unAccpetableStates;
+        List<String> unAcceptableStates;
         // List groups will contain lists of states that are equivalent.
         List<List<String>> groups = new ArrayList<>();
-        unAccpetableStates = this.reachableStates.stream()
+        unAcceptableStates = this.reachableStates.stream()
                 .filter(s -> !this.finalStates.contains(s))
                 .collect(Collectors.toList());
-        if(acceptableStates.isEmpty() | unAccpetableStates.isEmpty()){
+        if(acceptableStates.isEmpty() | unAcceptableStates.isEmpty()){
             // If we have some acceptable sates add them all to group
             if(!(acceptableStates.isEmpty())) groups.add(acceptableStates);
             // If we have unacceptable states add them all to group
-            if(!(unAccpetableStates.isEmpty())) groups.add(unAccpetableStates);
+            if(!(unAcceptableStates.isEmpty())) groups.add(unAcceptableStates);
         }else{
             // Creates two groups of states and adds them to groups
             groups.add(acceptableStates);
-            groups.add(unAccpetableStates);
+            groups.add(unAcceptableStates);
         }
         List<List<String>> newGroups = new ArrayList<>(groups);
         while (true) {
@@ -279,9 +270,9 @@ public class MinDFSM {
             // while we can found new reachable state
             Set<String> newReachableStates = new LinkedHashSet<>();
             // for every currently reachable state
-            for (String stanje : reachableStates) {
+            for (String state : reachableStates) {
                 // find all reachable states
-                reachableStatesFromCurrentState = FindDohvatljivaStanja(stanje);
+                reachableStatesFromCurrentState = FindReachableStates(state);
                 // add new states to set (removes duplicates)
                 newReachableStates.addAll(reachableStatesFromCurrentState);
             }
@@ -302,15 +293,13 @@ public class MinDFSM {
      * @param stanje
      * @return
      */
-    private List<String> FindDohvatljivaStanja(String stanje) {
-        Set<String> stanjaUKojaMozeOvoStanje = new LinkedHashSet<>();
-        for (Transition prijelaz : this.transitions) {
-            if (prijelaz.state.equals(stanje)) {
-                stanjaUKojaMozeOvoStanje.add(prijelaz.nextState);
-            }
-        }
-        List<String> lst = new ArrayList<>(stanjaUKojaMozeOvoStanje);
-        return lst;
+    private List<String> FindReachableStates(String stanje) {
+        return new ArrayList<>(
+                this.transitions.stream()
+                .filter(t->t.state.equals(stanje))
+                .map(t->t.nextState)
+                .collect(Collectors.toSet())
+        );
     }
 
     public MinDFSM(String fileInputString) {
@@ -321,12 +310,14 @@ public class MinDFSM {
             while ((line = br.readLine()) != null) {
                 temp.add(line);
             }
-            getUlaznaStanja(temp.get(0));
-            getAbeceda(temp.get(1));
-            getPrihvatljivaStanja(temp.get(2));
-            getPocetnoStanje(temp.get(3));
-            getPrijelazi(temp);
+            ParseStates(temp.get(0));
+            ParseAlphabet(temp.get(1));
+            ParseAcceptableStates(temp.get(2));
+            ParseInitialState(temp.get(3));
+            ParseTransitions(temp);
         } catch (IOException e) {
+            System.err.println("Error when reading from test file.");
+            System.out.println(e);
         }
     }
 
@@ -386,41 +377,51 @@ public class MinDFSM {
 
     }
 
-    private void getPrijelazi(List<String> prijelaziAsLines) {
+    private void ParseTransitions(List<String> TranstionsAsString) {
         this.transitions = new ArrayList<>();
-        // System.out.println("Prijelazi: ");
-        for (String line : prijelaziAsLines) {
-            if (prijelaziAsLines.indexOf(line) >= 4) {
-                String left = (line.split("->"))[0];
-                String right = (line.split("->"))[1];
-                String[] leftSplit = left.split(",");
-                Transition prijelaz = new Transition(leftSplit[0], leftSplit[1], right);
-                this.transitions.add(prijelaz);
-                // System.out.println("     "+prijelaz.toString());
-            }
-        }
+        TranstionsAsString.stream()
+                .filter(line -> TranstionsAsString.indexOf(line) >= 4)
+                .forEachOrdered(line -> {
+                    String left = (line.split("->"))[0];
+                    String right = (line.split("->"))[1];
+                    String[] leftSplit = left.split(",");
+                    this.transitions.add(new Transition(leftSplit[0], leftSplit[1], right));
+                    });
     }
 
-    private void getPocetnoStanje(String state) {
+    /***
+     * Sets initial state.
+     * @param state
+     */
+    private void ParseInitialState(String state) {
         this.initialState = state;
     }
 
-    private void getPrihvatljivaStanja(String prihStanjaAsString) {
+    /***
+     * Sets acceptable states.
+     * @param AcceptableStatesAsString
+     */
+    private void ParseAcceptableStates(String AcceptableStatesAsString) {
         this.finalStates = new ArrayList<>();
-        this.finalStates.addAll(Arrays.asList(prihStanjaAsString.split(",")));
-        // System.out.println("Prihvatljiva: "+this.prihStanja);
+        this.finalStates.addAll(Arrays.asList(AcceptableStatesAsString.split(",")));
     }
 
-    private void getAbeceda(String abecedaSaString) {
+    /***
+     * Sets alphabet.
+     * @param AlphabetAsString
+     */
+    private void ParseAlphabet(String AlphabetAsString) {
         this.alphabet = new ArrayList<>();
-        this.alphabet = Arrays.asList(abecedaSaString.split(","));
-        // System.out.println("Abeceda: "+this.abeceda);
+        this.alphabet = Arrays.asList(AlphabetAsString.split(","));
     }
 
-    private void getUlaznaStanja(String stanjaAsString) {
+    /***
+     * Sets states.
+     * @param StatesAsString
+     */
+    private void ParseStates(String StatesAsString) {
         this.states = new ArrayList<>();
-        this.states = Arrays.asList(stanjaAsString.split(","));
-        // System.out.println("Ul. stanja: "+this.ulaznaStanja);
+        this.states = Arrays.asList(StatesAsString.split(","));
     }
 
 }
