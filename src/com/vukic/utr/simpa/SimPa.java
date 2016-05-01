@@ -26,7 +26,7 @@ public class SimPa {
     private List<String> prihStanja;//Prihvatljiva stanja
     private String pocStanje;//Pocetno stanje automata
     private String pocStanjeStoga;//Pocetno stanje na stogu
-    private List<Prijelaz> prijelazi;// S(trenutnoStanje,ulazniZnak,stanjeStoga)->sljedStanje,[sljedSadrzajStoga]
+    private List<Prijelaz> prijelazi;// S(currentState,ulazniZnak,stanjeStoga)->sljedStanje,[sljedSadrzajStoga]
     private List<List<String>> zadnjiRezultati;
 
     public static void main(String[] args) {
@@ -99,7 +99,7 @@ public class SimPa {
             found=false;
             for(Prijelaz prijelaz:this.prijelazi){
                 if(prijelaz.stanje.equals(trenutnoStanje) && prijelaz.znakStog.equals(znakStack) && prijelaz.znakUlaz.equals(znakUlaz)){
-//						System.out.println("Prijelaz: "+prijelaz);
+//						System.out.println("Transition: "+prijelaz);
 //						System.out.println("Skidam znak: "+stack.peek());
                     stack.pop();
                     if(!(prijelaz.nizZnakovaStoga.contains("$") && prijelaz.nizZnakovaStoga.size()==1)){
@@ -114,7 +114,7 @@ public class SimPa {
                     kraj.add(trenutnoStanje);
                     kraj.add("#");
                     //Print stack content
-//						System.out.println("Sljedece stanje: "+trenutnoStanje);
+//						System.out.println("Sljedece stanje: "+currentState);
                     List<String> tempNewStack = new ArrayList<>(stack);
                     if(tempNewStack.isEmpty()){
                         kraj.add("$");
@@ -147,7 +147,7 @@ public class SimPa {
                     for(Prijelaz prijelaz:this.prijelazi){
                         if(prijelaz.stanje.equals(trenutnoStanje) && prijelaz.znakStog.equals(znakStack) && prijelaz.znakUlaz.equals("$")){
 //						System.out.println("Ne postoji prijelaz -> Provjeravam za $ znak: ");
-//						System.out.println("Prijelaz: "+prijelaz);
+//						System.out.println("Transition: "+prijelaz);
 //						System.out.println("Skidam znak: "+stack.peek());
                             stack.pop();
                             if(!(prijelaz.nizZnakovaStoga.contains("$") && prijelaz.nizZnakovaStoga.size()==1)){
@@ -162,7 +162,7 @@ public class SimPa {
                             kraj.add(trenutnoStanje);
                             kraj.add("#");
                             //Print stack content
-//						System.out.println("Sljedece stanje: "+trenutnoStanje);
+//						System.out.println("Sljedece stanje: "+currentState);
                             List<String> tempNewStack = new ArrayList<>(stack);
                             if(tempNewStack.isEmpty()){
                                 kraj.add("$");

@@ -1,7 +1,5 @@
 package com.vukic.utr.simts;
 
-import com.vukic.utr.simpa.SimPa;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -9,98 +7,83 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class SimTs {
     private static boolean DEBUG = true;
-    private List<String> stanja;
+    private List<String> states;
     private List<String> znakoviUlazni;
-    private List<String> znakoviTraka;
-    private List<String> traka;
-    private String znakPrazneCelije;
-    private List<String> prihvatljivaStanja;
-    private String pocetnoStanje;
-    private int polozajGlave;
-    private List<Prijelaz> prijelazi;
+    private List<String> tapeSymbols;
+    private List<String> tape;
+    private String EmptyCellSymbol;
+    private List<String> acceptableStates;
+    private String initialState;
+    private int headPosition;
+    private List<Transition> transitions;
 
     public static void main(String[] args) {
-        String broj = "05";
-        String fileInputName = "src/testsSimTs/test" + broj + "/test.in";
-        SimTs se = new SimTs(fileInputName);
-        System.out.println("Parsirani izlaz dolje ");
+        String testFileNumber = "01";
+        String testInputFile = "src/testsSimTs/test"+testFileNumber+"/test.in";
+        SimTs se = SimTs.DEBUG ? new SimTs(testInputFile) : new SimTs("");
         se.start();
-        if (SimTs.DEBUG) {
+        if(DEBUG) {
             try {
                 String line;
-                BufferedReader brr = new BufferedReader(new FileReader(new File("src/testsSimTs/test" + broj + "/test.out")));
+                BufferedReader brr = new BufferedReader(new FileReader(new File("src/testsSimTs/test" + testFileNumber + "/test.out")));
                 while ((line = brr.readLine()) != null) {
                     System.out.println(line);
                 }
             } catch (IOException e) {
+                System.out.println("Error while reading from test output file!");
             }
-            System.out.println("Izlaz iz datoteke iznad ");
-
         }
     }
 
     private void start() {
-        // inicijalizacija na prvi znak i polozaj
-        Integer glava = this.polozajGlave;
-        String trenutnoStanje = this.pocetnoStanje;
-        boolean noTransitionsFound = true;
+        Integer glava = this.headPosition;
+        String trenutnoStanje = this.initialState;
+        boolean noTransitionsFound;
         while (true) {
             noTransitionsFound = true;
-            if (glava >= this.traka.size() || glava < 0) {
+            if (glava >= this.tape.size() || glava < 0) {
                 System.out.print(trenutnoStanje + "|");
                 System.out.print(glava - 1 + "|");
-                for (String str : this.traka) {
+                for (String str : this.tape) {
                     System.out.print(str);
                 }
-                if (this.prihvatljivaStanja.contains(trenutnoStanje)) {
+                if (this.acceptableStates.contains(trenutnoStanje)) {
                     System.out.println("|1");
                 } else {
                     System.out.println("|0");
                 }
                 break;// exit while
             }
-            String znakTrake = this.traka.get(glava);// ucitaj znak trake
-            for (Prijelaz prijelaz : this.prijelazi) {
-                if (prijelaz.trenutnoStanje.equals(trenutnoStanje) && prijelaz.znakNaTraci.equals(znakTrake)) {
-                    if (prijelaz.pomakGlave.equals("L")) {
+            String znakTrake = this.tape.get(glava);// ucitaj znak trake
+            for (Transition transition : this.transitions) {
+                if (transition.currentState.equals(trenutnoStanje) && transition.currentSymbol.equals(znakTrake)) {
+                    if (transition.headDirection.equals("L")) {
                         if (glava - 1 < 0) {
                             noTransitionsFound = true;
                             break;
                         }
                     }
-                    if (prijelaz.pomakGlave.equals("R")) {
-                        if (glava + 1 >= this.traka.size()) {
+                    if (transition.headDirection.equals("R")) {
+                        if (glava + 1 >= this.tape.size()) {
                             noTransitionsFound = true;
                             break;
                         }
                     }
-                    // postoji prijelaz za stanje i znak trake
-                    // System.out.print("Traka: ");
-                    // for (String str : this.traka) {
-                    // System.out.print(str);
-                    // }
-                    // System.out.println();
-                    // System.out.println("Prijelaz: "+prijelaz);
-                    // System.out.println(trenutnoStanje+","+znakTrake);
-                    trenutnoStanje = prijelaz.novoStanje; // promjeni stanje
-                    // System.out.println("Novo stanje: "+trenutnoStanje);
-                    // System.out.println("Stari znak: "+znakTrake);
-                    // System.out.println("Novi znak: "+prijelaz.noviZnak);
-                    this.traka.set(glava, prijelaz.noviZnak); // zamjeni znak
+                    trenutnoStanje = transition.newState; // promjeni stanje
+                    this.tape.set(glava, transition.newSymbol); // zamjeni znak
                     // trake
-                    if (prijelaz.pomakGlave.equals("R")) { // pomakni glavu
+                    if (transition.headDirection.equals("R")) { // pomakni glavu
                         // System.out.println("Pomicem glavu u desno.");
                         glava++;
                     } else {
                         // System.out.println("Pomicem glavu u lijevo.");
                         glava--;
                     }
-                    // System.out.println(this.traka);
+                    // System.out.println(this.tape);
                     noTransitionsFound = false;
                     break; // exit for
                 }
@@ -109,10 +92,10 @@ public class SimTs {
                 // System.out.println("Ne postoji prijelaz: ");
                 System.out.print(trenutnoStanje + "|");
                 System.out.print(glava + "|");
-                for (String str : this.traka) {
+                for (String str : this.tape) {
                     System.out.print(str);
                 }
-                if (this.prihvatljivaStanja.contains(trenutnoStanje)) {
+                if (this.acceptableStates.contains(trenutnoStanje)) {
                     System.out.println("|1");
                 } else {
                     System.out.println("|0");
@@ -123,87 +106,72 @@ public class SimTs {
 
     }
 
-    public SimTs(String fileInputName) {
-        List<String> temp = new ArrayList<>(); // Lines from file
+    public SimTs(String testFileName) {
+        List<String> temp = new ArrayList<>();
         String line;
         try {
-            BufferedReader br;
-            if (SimTs.DEBUG) {
-                br = new BufferedReader(new FileReader(new File(fileInputName)));
-            } else {
-                br = new BufferedReader(new InputStreamReader(System.in));
-            }
-            while ((line = br.readLine()) != null) {
+            BufferedReader reader = SimTs.DEBUG ?
+                    new BufferedReader(new FileReader(new File(testFileName)))
+                    : new BufferedReader(new InputStreamReader(System.in));
+            while ((line = reader.readLine()) != null) {
                 temp.add(line);
             }
-            getStanja(temp.get(0));
+            ParseStates(temp.get(0));
             getUlazniZnakovi(temp.get(1));
-            getZnakoviTrake(temp.get(2));
-            getZnakPrazneCelije(temp.get(3));
-            getTraka(temp.get(4));
-            getPrihvatljivaStanja(temp.get(5));
-            getPocetnoStanje(temp.get(6));
-            getPolozajGlave(temp.get(7));
-            getPrijelazi(temp);
+            ParseTapeSymbols(temp.get(2));
+            ParseEmptyCellSymbol(temp.get(3));
+            ParseTape(temp.get(4));
+            ParseAcceptableStates(temp.get(5));
+            ParseInitialState(temp.get(6));
+            ParseHeadPosition(temp.get(7));
+            ParseTransitions(temp);
         } catch (IOException e) {
         }
     }
 
-    private void getPrijelazi(List<String> ulaz) {
-        this.prijelazi = new ArrayList<>();
-        for (String line : ulaz) {
-            if (ulaz.indexOf(line) > 7) {
-                String left = line.split("->")[0];
-                String right = line.split("->")[1];
-                String[] leftSplit = left.split(",");// left part of transition
-                String[] rightSplit = right.split(",");// right part of
-                // trnsition
-                Prijelaz prijelaz = new Prijelaz(leftSplit[0], leftSplit[1], rightSplit[0], rightSplit[1], rightSplit[2]);
-                this.prijelazi.add(prijelaz);
-                // System.out.println(prijelaz);
-            }
-        }
+    private void ParseTransitions(List<String> input) {
+        this.transitions = new ArrayList<>();
+        input.stream().filter(line -> input.indexOf(line) > 7).forEach(line -> {
+            String left = line.split("->")[0];
+            String right = line.split("->")[1];
+            String[] leftSplit = left.split(",");
+            String[] rightSplit = right.split(",");
+            this.transitions.add(new Transition(leftSplit[0], leftSplit[1], rightSplit[0], rightSplit[1], rightSplit[2]));
+        });
 
     }
 
-    private void getPolozajGlave(String polozajAsString) {
-        this.polozajGlave = Integer.parseInt(polozajAsString);
-        // System.out.println("Polozaj glave: "+this.polozajGlave);
+    private void ParseHeadPosition(String positionAsString) {
+        this.headPosition = Integer.parseInt(positionAsString);
     }
 
-    private void getPocetnoStanje(String stanje) {
-        this.pocetnoStanje = stanje;
-        // System.out.println("Prihvatljiva stanja: " + this.pocetnoStanje);
+    private void ParseInitialState(String state) {
+        this.initialState = state;
 
     }
 
-    private void getPrihvatljivaStanja(String prihStanjaWithCommas) {
-        this.prihvatljivaStanja = new ArrayList<>();
-        String[] temp = prihStanjaWithCommas.split(",");
-        this.prihvatljivaStanja = Arrays.asList(temp);
-        // System.out.println("Prihvatljiva stanja: " +
-        // this.prihvatljivaStanja);
+    private void ParseAcceptableStates(String acceptableStatesAsString) {
+        this.acceptableStates = new ArrayList<>();
+        this.acceptableStates = Arrays.asList(acceptableStatesAsString.split(","));
     }
 
-    private void getTraka(String niz) {
-        this.traka = new ArrayList<>();
-        char[] temp = niz.toCharArray();
+    private void ParseTape(String tapeAsString) {
+        this.tape = new ArrayList<>();
+        char[] temp = tapeAsString.toCharArray();
         for (char ch : temp) {
-            this.traka.add(String.valueOf(ch));
+            this.tape.add(String.valueOf(ch));
         }
-        // System.out.println("Traka: " + this.traka);
+        System.out.println(tapeAsString);
+        tapeAsString.chars().forEach(System.out::println);
     }
 
-    private void getZnakPrazneCelije(String znak) {
-        this.znakPrazneCelije = znak;
-        // System.out.println("Znak prazne celije: " + this.znakPrazneCelije);
+    private void ParseEmptyCellSymbol(String symbol) {
+        this.EmptyCellSymbol = symbol;
     }
 
-    private void getZnakoviTrake(String ulazniZnakoviWithCommas) {
-        this.znakoviTraka = new ArrayList<>();
-        String[] temp = ulazniZnakoviWithCommas.split(",");
-        this.znakoviTraka = Arrays.asList(temp);
-        // System.out.println("Znakovi trake: " + this.znakoviTraka);
+    private void ParseTapeSymbols(String inputSymbolsAsString) {
+        this.tapeSymbols = new ArrayList<>();
+        this.tapeSymbols = Arrays.asList(inputSymbolsAsString.split(","));
 
     }
 
@@ -211,35 +179,32 @@ public class SimTs {
         this.znakoviUlazni = new ArrayList<>();
         String[] temp = ulazniZnakoviWithCommas.split(",");
         this.znakoviUlazni = Arrays.asList(temp);
-        // System.out.println("Ulazni znakovi: " + this.znakoviUlazni);
 
     }
 
-    private void getStanja(String stanjaWithCommas) {
-        this.stanja = new ArrayList<>();
-        String[] temp = stanjaWithCommas.split(",");
-        this.stanja = Arrays.asList(temp);
-        // System.out.println("Stanja: " + this.stanja);
+    private void ParseStates(String statesAsString) {
+        this.states = new ArrayList<>();
+        this.states = Arrays.asList(statesAsString.split(","));
     }
 
-    private class Prijelaz {
-        public String trenutnoStanje;
-        public String znakNaTraci;
-        public String novoStanje;
-        public String noviZnak;
-        public String pomakGlave;
+    private class Transition {
+        public String currentState;
+        public String currentSymbol;
+        public String newState;
+        public String newSymbol;
+        public String headDirection;
 
-        public Prijelaz(String stanje, String stariZnak, String novoStanje, String noviZnak, String pomak) {
-            this.trenutnoStanje = stanje;
-            this.znakNaTraci = stariZnak;
-            this.novoStanje = novoStanje;
-            this.noviZnak = noviZnak;
-            this.pomakGlave = pomak;
+        public Transition(String state, String oldsymbol, String newState, String newSymbol, String direction) {
+            this.currentState = state;
+            this.currentSymbol = oldsymbol;
+            this.newState = newState;
+            this.newSymbol = newSymbol;
+            this.headDirection = direction;
         }
 
         @Override
         public String toString() {
-            return this.trenutnoStanje + "," + "" + this.znakNaTraci + "->" + this.novoStanje + "," + this.noviZnak + "," + this.pomakGlave;
+            return this.currentState + "," + "" + this.currentSymbol + "->" + this.newState + "," + this.newSymbol + "," + this.headDirection;
         }
     }
 }

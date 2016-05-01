@@ -55,7 +55,7 @@ public class SimENFSM {
             BufferedReader reader = SimENFSM.DEBUG ?
                     new BufferedReader(new FileReader(new File(testFileName)))
                     : new BufferedReader(new InputStreamReader(System.in));
-            String line = reader.readLine();;
+            String line = reader.readLine();
             while (line != null) {
                 this.linesForProcessing.add(line);
                 line = reader.readLine();
