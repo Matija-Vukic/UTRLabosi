@@ -12,7 +12,7 @@ import java.util.List;
 public class SimTs {
     private static boolean DEBUG = true;
     private List<String> states;
-    private List<String> znakoviUlazni;
+    private List<String> alphabet;
     private List<String> tapeSymbols;
     private List<String> tape;
     private String EmptyCellSymbol;
@@ -40,72 +40,58 @@ public class SimTs {
     }
 
     private void start() {
-        Integer glava = this.headPosition;
-        String trenutnoStanje = this.initialState;
+        Integer head = this.headPosition;
+        String currentState = this.initialState;
         boolean noTransitionsFound;
         while (true) {
             noTransitionsFound = true;
-            if (glava >= this.tape.size() || glava < 0) {
-                System.out.print(trenutnoStanje + "|");
-                System.out.print(glava - 1 + "|");
-                for (String str : this.tape) {
-                    System.out.print(str);
-                }
-                if (this.acceptableStates.contains(trenutnoStanje)) {
-                    System.out.println("|1");
-                } else {
-                    System.out.println("|0");
-                }
-                break;// exit while
+            if (head >= this.tape.size() || head < 0) {
+                PrintResult(currentState,head);
+                break;
             }
-            String znakTrake = this.tape.get(glava);// ucitaj znak trake
+            String tapeSymbol = this.tape.get(head);// read from tape
             for (Transition transition : this.transitions) {
-                if (transition.currentState.equals(trenutnoStanje) && transition.currentSymbol.equals(znakTrake)) {
+                if (transition.currentState.equals(currentState) && transition.currentSymbol.equals(tapeSymbol)) {
                     if (transition.headDirection.equals("L")) {
-                        if (glava - 1 < 0) {
+                        if (head - 1 < 0) {
                             noTransitionsFound = true;
                             break;
                         }
                     }
                     if (transition.headDirection.equals("R")) {
-                        if (glava + 1 >= this.tape.size()) {
+                        if (head + 1 >= this.tape.size()) {
                             noTransitionsFound = true;
                             break;
                         }
                     }
-                    trenutnoStanje = transition.newState; // promjeni stanje
-                    this.tape.set(glava, transition.newSymbol); // zamjeni znak
-                    // trake
-                    if (transition.headDirection.equals("R")) { // pomakni glavu
-                        // System.out.println("Pomicem glavu u desno.");
-                        glava++;
+                    currentState = transition.newState; // change state
+                    this.tape.set(head, transition.newSymbol); // replace symbol on tape
+                    if (transition.headDirection.equals("R")) { // Move head
+                        head++;
                     } else {
-                        // System.out.println("Pomicem glavu u lijevo.");
-                        glava--;
+                        head--;
                     }
-                    // System.out.println(this.tape);
                     noTransitionsFound = false;
-                    break; // exit for
+                    break;
                 }
             }
             if (noTransitionsFound) {
-                // System.out.println("Ne postoji prijelaz: ");
-                System.out.print(trenutnoStanje + "|");
-                System.out.print(glava + "|");
-                for (String str : this.tape) {
-                    System.out.print(str);
-                }
-                if (this.acceptableStates.contains(trenutnoStanje)) {
-                    System.out.println("|1");
-                } else {
-                    System.out.println("|0");
-                }
-                break; // exit while
+                PrintResult(currentState,head);
+                break;
             }
         }
 
     }
-
+    private void PrintResult(String currentState,Integer head){
+        System.out.print(currentState + "|");
+        System.out.print(head + "|");
+        this.tape.forEach(System.out::print);
+        if (this.acceptableStates.contains(currentState)) {
+            System.out.println("|1");
+        } else {
+            System.out.println("|0");
+        }
+    }
     public SimTs(String testFileName) {
         List<String> temp = new ArrayList<>();
         String line;
@@ -117,7 +103,7 @@ public class SimTs {
                 temp.add(line);
             }
             ParseStates(temp.get(0));
-            getUlazniZnakovi(temp.get(1));
+            ParseAlphabet(temp.get(1));
             ParseTapeSymbols(temp.get(2));
             ParseEmptyCellSymbol(temp.get(3));
             ParseTape(temp.get(4));
@@ -161,8 +147,6 @@ public class SimTs {
         for (char ch : temp) {
             this.tape.add(String.valueOf(ch));
         }
-        System.out.println(tapeAsString);
-        tapeAsString.chars().forEach(System.out::println);
     }
 
     private void ParseEmptyCellSymbol(String symbol) {
@@ -175,10 +159,9 @@ public class SimTs {
 
     }
 
-    private void getUlazniZnakovi(String ulazniZnakoviWithCommas) {
-        this.znakoviUlazni = new ArrayList<>();
-        String[] temp = ulazniZnakoviWithCommas.split(",");
-        this.znakoviUlazni = Arrays.asList(temp);
+    private void ParseAlphabet(String AlphabetWithCommas) {
+        this.alphabet = new ArrayList<>();
+        this.alphabet = Arrays.asList(AlphabetWithCommas.split(","));
 
     }
 
