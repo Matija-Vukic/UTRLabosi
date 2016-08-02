@@ -1,4 +1,4 @@
-package com.vukic.utr.mindfsm;
+package com.mvukic.utr.mindfsm;
 
 import java.io.*;
 import java.util.ArrayList;

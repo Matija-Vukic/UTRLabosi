@@ -1,4 +1,4 @@
-package com.vukic.utr.simenfsm;
+package com.mvukic.utr.simenfsm;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,7 +22,7 @@ public class SimENFSM {
     private List<String> linesForProcessing;
 
     public static void main(String[] args) {
-        String testFileNumber = "03"; //See testsSimENFSM folder for details
+        String testFileNumber = "07"; //See testsSimENFSM folder for details
         String testInputFile = "src/testsSimENFSM/test"+testFileNumber+"/test.a";
         SimENFSM se = SimENFSM.DEBUG ? new SimENFSM(testInputFile) : new SimENFSM("");
         se.startSimulation();
@@ -183,7 +183,7 @@ public class SimENFSM {
 
         }
         outputArray.remove(outputArray.size() - 1);
-		outputArray.stream().forEach(s -> System.out.print(s));
+		outputArray.forEach(System.out::print);
         System.out.println();
     }
 

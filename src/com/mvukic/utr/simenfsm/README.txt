@@ -1,6 +1,6 @@
 Input file definition:
 
-a,pnp,a|pnp,lab2|pnp,a|pnp,lab2,utr,utr     :First line are input arrays separated with |
+a,pnp,a|pnp,lab2|pnp,a|pnp,lab2,utr,utr     ;First line are input arrays separated with |
 p5,s3,s4,st6,stanje1,stanje2                ;Second line all states separated with commas
 a,lab2,pnp,utr                              ;Third line are all symbols separated with commas (alphabet)
 p5                                          ;Fourth line are final states separated with commas

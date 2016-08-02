@@ -1,4 +1,4 @@
-package com.vukic.utr.simts;
+package com.mvukic.utr.simts;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -40,43 +40,43 @@ public class SimTs {
     }
 
     private void start() {
-        Integer head = this.headPosition;
+        Integer headPosition = this.headPosition;
         String currentState = this.initialState;
         boolean noTransitionsFound;
         while (true) {
             noTransitionsFound = true;
-            if (head >= this.tape.size() || head < 0) {
-                PrintResult(currentState,head);
+            if (headPosition >= this.tape.size() || headPosition < 0) {
+                PrintResult(currentState,headPosition);
                 break;
             }
-            String tapeSymbol = this.tape.get(head);// read from tape
+            String tapeSymbol = this.tape.get(headPosition);// read from tape
             for (Transition transition : this.transitions) {
                 if (transition.currentState.equals(currentState) && transition.currentSymbol.equals(tapeSymbol)) {
                     if (transition.headDirection.equals("L")) {
-                        if (head - 1 < 0) {
+                        if (headPosition - 1 < 0) {
                             noTransitionsFound = true;
                             break;
                         }
                     }
                     if (transition.headDirection.equals("R")) {
-                        if (head + 1 >= this.tape.size()) {
+                        if (headPosition + 1 >= this.tape.size()) {
                             noTransitionsFound = true;
                             break;
                         }
                     }
                     currentState = transition.newState; // change state
-                    this.tape.set(head, transition.newSymbol); // replace symbol on tape
+                    this.tape.set(headPosition, transition.newSymbol); // replace symbol on tape
                     if (transition.headDirection.equals("R")) { // Move head
-                        head++;
+                        headPosition++;
                     } else {
-                        head--;
+                        headPosition--;
                     }
                     noTransitionsFound = false;
                     break;
                 }
             }
             if (noTransitionsFound) {
-                PrintResult(currentState,head);
+                PrintResult(currentState,headPosition);
                 break;
             }
         }
@@ -112,6 +112,7 @@ public class SimTs {
             ParseHeadPosition(temp.get(7));
             ParseTransitions(temp);
         } catch (IOException e) {
+            System.err.println("Error: "+e);
         }
     }
 
@@ -177,9 +178,9 @@ public class SimTs {
         public String newSymbol;
         public String headDirection;
 
-        public Transition(String state, String oldsymbol, String newState, String newSymbol, String direction) {
+        public Transition(String state, String oldSymbol, String newState, String newSymbol, String direction) {
             this.currentState = state;
-            this.currentSymbol = oldsymbol;
+            this.currentSymbol = oldSymbol;
             this.newState = newState;
             this.newSymbol = newSymbol;
             this.headDirection = direction;
