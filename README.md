@@ -1,4 +1,4 @@
-# UTR Labosi
+# UTR
 UTR labosi FER2 2014./2015
 
 ###Programs:
@@ -6,13 +6,6 @@ UTR labosi FER2 2014./2015
 
 2. DFA minimization
 
-3. Simulator Determinističkog Potisnog Automata
+3. Deterministic pushdown automaton (DPA)
 
-4. Simulator Turingovog stroja
-
-### Translations and optimizations:
-
-- [x] 1
-- [x] 2
-- [ ] 3
-- [ ] 4
+4. Turing Machine Simulator
