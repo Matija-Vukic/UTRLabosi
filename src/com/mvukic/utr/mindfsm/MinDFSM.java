@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /***
- * @author Matija Vukić 2016
+ * @author mvukic 2016.
  */
 public class MinDFSM {
     public static boolean DEBUG = true;
@@ -21,7 +21,7 @@ public class MinDFSM {
     private List<Transition> transitions;
     private List<List<String>> listOfEquivalentStates;
     private Set<Transition> newTransitions;
-    public static List<String> finalOutput;
+    private static List<String> finalOutput;
 
     public static void main(String[] args) {
         String testFileNumber = "06";
@@ -47,7 +47,7 @@ public class MinDFSM {
          }
     }
 
-    public void start() {
+    private void start() {
         RemoveUnreachableStates();
         RemoveRedundantTransitionsAndUnreachableStates();
         MinimizeDFSM();
@@ -61,6 +61,7 @@ public class MinDFSM {
     /***
      * Swaps initial state with the one that represents him in his group
      * of equivalent states.
+     * Method .get() is used because isPresent() returns true always.
      */
     private void FixInitialState() {
         this.initialState = this.listOfEquivalentStates.stream()
@@ -92,7 +93,7 @@ public class MinDFSM {
 
     /***
      * From every group of equivalent states removes all states but the first
-     * because first state represents all the other sates.
+     * because the first state represents all the other sates.
      */
     private void RemoveEquivalentStatesFromReachable() {
         this.reachableStates = this.listOfEquivalentStates.stream()
@@ -111,14 +112,15 @@ public class MinDFSM {
             MinDFSM.finalOutput.add(p.toString());
         }
         if(!MinDFSM.DEBUG){
-            MinDFSM.finalOutput.stream().forEach(System.out::println);
+            MinDFSM.finalOutput.forEach(System.out::println);
         }
     }
 
     /***
      * Removes transitions that have the same state and next state.
      * Leaves only transition that for those states has states that are first in groups
-     * in which those states were found.
+     * in which those states were found. Method .get() is used because isPresent()
+     * always returns true.
      */
     private void RemoveEquivalentTransitions() {
         this.newTransitions = new LinkedHashSet<>();
@@ -214,18 +216,15 @@ public class MinDFSM {
                     .collect(Collectors.toList())
                     .size();
         }
-        if (counter == this.alphabet.size()) {
-            return true;
-        } else {
-            return false;
-        }
+        return counter == this.alphabet.size();
     }
 
     /***
-     *  Returns transition for specific state and symbol.
+     *  Returns transition for specific state and symbol or null
+     *  if there is no such transition.
      * @param state
      * @param symbol
-     * @return
+     * @return Transition or null.
      */
     private Transition GetTransition(String state, String symbol) {
         return this.transitions.stream()
@@ -246,6 +245,7 @@ public class MinDFSM {
                 .collect(Collectors.toList());
         this.transitions.clear();
         this.transitions.addAll(temp1);
+
         // Remove unreachable sates
         List<String> temp2 = this.finalStates.stream()
                 .filter(s -> this.reachableStates.contains(s))
@@ -290,13 +290,13 @@ public class MinDFSM {
     /**
      * Finds all reachable states for current state.
      *
-     * @param stanje
+     * @param state
      * @return
      */
-    private List<String> FindReachableStates(String stanje) {
+    private List<String> FindReachableStates(String state) {
         return new ArrayList<>(
                 this.transitions.stream()
-                .filter(t->t.state.equals(stanje))
+                .filter(t->t.state.equals(state))
                 .map(t->t.nextState)
                 .collect(Collectors.toSet())
         );

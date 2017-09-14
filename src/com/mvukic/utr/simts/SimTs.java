@@ -9,6 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/***
+ * @author mvukic 2016.
+ * TODO: Refactor
+ */
 public class SimTs {
     private static boolean DEBUG = true;
     private List<String> states;

@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
 /**
  * Deterministic pushdown automaton (DPA).
  * Acceptance by final state.
- * @author Matija Vukić
- *
+ * @author mvukic 2016.
+ * TODO: Refactor
  */
 public class SimDPA {
     private static boolean DEBUG=true;
@@ -53,6 +53,7 @@ public class SimDPA {
                 .forEach(System.out::println);
     }
 
+    // What!
     private void ParseArray(List<String> inputArray) {
         List<String> array = new ArrayList<>(inputArray);
         String currentState = new String(this.initState);

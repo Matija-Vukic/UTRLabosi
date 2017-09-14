@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 /***
  * @author Matija Vukić 2015
  */
+
 public class SimENFSM {
     private static boolean DEBUG = true;
     private List<List<String>> inputArrays;
@@ -134,7 +135,6 @@ public class SimENFSM {
             //Nn new states were found
             this.currentStates.clear();
             this.currentStates.addAll(newStates);
-            return;
         } else {
             //New states were found so we have found E-Transitions for them
             findETransitions(newStates);
@@ -199,8 +199,8 @@ public class SimENFSM {
             if (sorted.size() > 1) sorted.remove("#");
         }
         this.currentStates.addAll(sorted);
-        String joined = String.join(",",new ArrayList<>(this.currentStates));
-        return joined;
+        return String.join(",",new ArrayList<>(this.currentStates));
+
     }
 
     /**
@@ -224,8 +224,7 @@ public class SimENFSM {
 
             Transition that = (Transition) o;
 
-            if (!state.equals(that.state)) return false;
-            return symbol.equals(that.symbol);
+            return state.equals(that.state) && symbol.equals(that.symbol);
 
         }
 
