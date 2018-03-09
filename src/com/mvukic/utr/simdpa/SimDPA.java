@@ -12,7 +12,8 @@ import java.util.stream.Collectors;
  * Deterministic pushdown automaton (DPA).
  * Acceptance by final state.
  * @author mvukic 2016.
- * TODO: Refactor
+ * TODO: Refactor (don't)
+ * TODO: Leave it as it is because I don't even know what this code does.
  */
 public class SimDPA {
     private static boolean DEBUG=true;
